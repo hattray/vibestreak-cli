@@ -3,6 +3,12 @@
 Any version runs with `npx vibestreak@<version>`; `npx vibestreak@latest autosync on`
 moves the background sync to the newest one.
 
+## 0.3.6 (2026-10-26)
+
+- Codex: messages are counted again for Codex versions that log no message
+  events (only tool calls and token counts), where earlier versions counted
+  none. Your active days were never affected.
+
 ## 0.3.5 (2026-10-26)
 
 - The site moved to https://vibestreak.dev, and new machines link there by default.

@@ -63,6 +63,31 @@ test('Codex: tokens are the growth of the running total, cached input split out'
   assert.deepEqual(day.models, ['gpt-5.5'])
 })
 
+test('Codex: a session with no message events counts its message items', async () => {
+  const root = temp()
+  mkdirSync(join(root, 'sessions', '2026'), { recursive: true })
+  const t = at('2026-10-24T15:00:00Z')
+  const item = (role, text) => JSON.stringify({ timestamp: t, type: 'response_item', payload: { type: 'message', role, content: [{ type: 'input_text', text }] } })
+  const rows = [
+    JSON.stringify({ timestamp: t, type: 'session_meta', payload: { id: 'x2' } }),
+    item('developer', 'rules'),
+    item('user', '# AGENTS.md instructions for /repo'),
+    item('user', '<environment_context>\n</environment_context>'),
+    item('user', 'fix the build'),
+    JSON.stringify({ timestamp: t, type: 'response_item', payload: { type: 'function_call' } }),
+    item('assistant', 'done'),
+  ]
+  writeFileSync(join(root, 'sessions', '2026', 'r.jsonl'), rows.join('\n'))
+  const [day] = await collectCodex({ root })
+  assert.equal(day.messages, 2)
+  assert.equal(day.toolCalls, 1)
+
+  // With message events present, items aren't counted on top of them.
+  rows.push(JSON.stringify({ timestamp: t, type: 'event_msg', payload: { type: 'agent_message' } }))
+  writeFileSync(join(root, 'sessions', '2026', 'r.jsonl'), rows.join('\n'))
+  assert.equal((await collectCodex({ root }))[0].messages, 1)
+})
+
 test('agents are named by their own addresses, never a human first name', () => {
   assert.equal(agentOf('Claude Opus 5.5 <noreply@anthropic.com>'), 'claude')
   assert.equal(agentOf('Codex <codex@openai.com>'), 'codex')

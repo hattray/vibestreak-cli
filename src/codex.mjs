@@ -12,8 +12,15 @@ import { lines, walk } from './files.mjs'
 //   cached input inside input_tokens, so it is split out as cache reads.
 // - Messages: the person's and the agent's messages (`user_message`,
 //   `agent_message`); tool calls: `function_call` and `custom_tool_call`.
+//   Some Codex versions log no message events at all; a session without any
+//   counts its `message` items instead, leaving out the context Codex adds
+//   itself (AGENTS.md, the environment) as the user's turn.
 const TOOL_CALLS = new Set(['function_call', 'custom_tool_call'])
 const MESSAGES = new Set(['user_message', 'agent_message'])
+const ROLES = new Set(['user', 'assistant'])
+const INJECTED = /^\s*(# AGENTS\.md instructions|<environment_context>|<user_instructions>)/
+const isMessageItem = payload =>
+  payload.type === 'message' && ROLES.has(payload.role) && !(payload.role === 'user' && INJECTED.test(payload.content?.[0]?.text ?? ''))
 
 export async function collectCodex({ root = join(homedir(), '.codex'), since } = {}) {
   const days = new Map()
@@ -28,6 +35,10 @@ export async function collectCodex({ root = join(homedir(), '.codex'), since } =
       let session
       let model
       let last = { input: 0, cached: 0, output: 0 }
+      // This session's messages per day: from events, and from items as a fallback.
+      const events = new Map()
+      const items = new Map()
+      const add = (map, date) => map.set(date, (map.get(date) ?? 0) + 1)
       for await (const line of lines(path)) {
         let row
         try {
@@ -55,7 +66,8 @@ export async function collectCodex({ root = join(homedir(), '.codex'), since } =
         counts.ids.add(session)
         if (model) counts.models.add(model)
         if (row.type === 'response_item' && TOOL_CALLS.has(payload.type)) counts.toolCalls++
-        if (row.type === 'event_msg' && MESSAGES.has(payload.type)) counts.messages++
+        if (row.type === 'event_msg' && MESSAGES.has(payload.type)) add(events, date)
+        if (row.type === 'response_item' && isMessageItem(payload)) add(items, date)
         const total = row.type === 'event_msg' && payload.type === 'token_count' ? payload.info?.total_token_usage : undefined
         if (!total) continue
         const now = {
@@ -73,6 +85,7 @@ export async function collectCodex({ root = join(homedir(), '.codex'), since } =
         counts.output += Math.max(0, delta.output)
         last = now
       }
+      for (const [date, n] of events.size ? events : items) day(date).messages += n
     }
   }
 
