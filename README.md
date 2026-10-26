@@ -4,7 +4,7 @@
 
 Your AI coding streak, from your own machine: a heatmap of the days you coded
 with AI agents and the commits you shipped with them, ranked on consistency,
-not spend. Profiles and the leaderboard: https://vibestreak.kingsbridge-consultancy.com
+not spend. Profiles and the leaderboard: https://vibestreak.dev
 
 ```bash
 npx vibestreak                                  # sign in through the browser, sync, offer autosync
@@ -13,7 +13,7 @@ npx vibestreak emails scan                      # addresses from your other acco
 npx vibestreak pause 3d                         # background syncs and the nudge off for a while
 ```
 
-All commands: https://vibestreak.kingsbridge-consultancy.com/cli
+All commands: https://vibestreak.dev/cli
 
 ## What it reads
 

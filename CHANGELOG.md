@@ -3,6 +3,12 @@
 Any version runs with `npx vibestreak@<version>`; `npx vibestreak@latest autosync on`
 moves the background sync to the newest one.
 
+## 0.3.5 (2026-10-26)
+
+- The site moved to https://vibestreak.dev, and new machines link there by default.
+  Machines set up earlier keep syncing to the old address, which still works;
+  `vibestreak login --server https://vibestreak.dev` moves one.
+
 ## 0.3.4 (2026-10-25)
 
 - The source is public: https://github.com/hattray/vibestreak-cli. The npm

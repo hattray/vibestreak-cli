@@ -14,7 +14,7 @@ import { updateCommand, updateNotice, VERSION } from '../src/version.mjs'
 import { boardView, dashboardView, profileView, todayView } from '../src/views.mjs'
 
 const BRAND = process.env.VIBESTREAK_BRAND ?? 'vibestreak'
-const DEFAULT_SERVER = process.env.VIBESTREAK_SERVER ?? 'https://vibestreak.kingsbridge-consultancy.com'
+const DEFAULT_SERVER = process.env.VIBESTREAK_SERVER ?? 'https://vibestreak.dev'
 
 const HELP = `${BRAND} ${VERSION} — share your AI coding heatmap: what you shipped, and how steadily.
 
