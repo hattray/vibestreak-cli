@@ -3,6 +3,12 @@
 Any version runs with `npx vibestreak@<version>`; `npx vibestreak@latest autosync on`
 moves the background sync to the newest one.
 
+## 0.3.4 (2026-10-25)
+
+- The source is public: https://github.com/hattray/vibestreak-cli. The npm
+  page now links to it and to its issue tracker.
+- No change to what the CLI does or sends.
+
 ## 0.3.3 (2026-10-25)
 
 - `vibestreak board all` shows consistency as the share of days active since
