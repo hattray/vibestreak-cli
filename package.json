@@ -1,0 +1,17 @@
+{
+  "name": "vibestreak",
+  "version": "0.3.3",
+  "description": "Your AI coding streak: a heatmap of the days you coded with Claude Code, Codex, Cursor, Copilot, Gemini and OpenCode, and the commits you shipped with them. Sends daily totals only.",
+  "keywords": ["vibestreak", "claude-code", "claude", "codex", "cursor", "github-copilot", "copilot", "gemini-cli", "antigravity", "opencode", "ai-coding", "vibe-coding", "heatmap", "streak", "leaderboard", "github-contributions", "mcp", "cli"],
+  "homepage": "https://vibestreak.kingsbridge-consultancy.com/cli",
+  "repository": { "type": "git", "url": "git+https://github.com/hattray/vibestreak-cli.git" },
+  "bugs": { "url": "https://github.com/hattray/vibestreak-cli/issues" },
+  "license": "MIT",
+  "author": "Kingsbridge Consultancy LLC <support@kingsbridge-consultancy.com>",
+  "type": "module",
+  "bin": { "vibestreak": "bin/vibestreak.mjs" },
+  "files": ["bin", "src", "README.md", "CHANGELOG.md", "LICENSE"],
+  "engines": { "node": ">=22.13" },
+  "os": ["darwin", "linux", "win32"],
+  "scripts": { "test": "node --test test/*.test.mjs" }
+}

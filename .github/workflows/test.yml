@@ -1,0 +1,72 @@
+# Kept in step with the private monorepo's .github/workflows/cli.yml (which runs it from cli/).
+name: Test
+
+# The CLI runs on every developer's own machine, so it is tested on all three
+# systems: the unit tests, then a real collect and a real install and removal
+# of the background jobs (launchd, systemd or crontab, Task Scheduler), each
+# in a throwaway home folder.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit tests
+        run: npm test
+      - name: Throwaway home folder
+        run: |
+          home="$RUNNER_TEMP/home"
+          mkdir -p "$home"
+          echo "HOME=$home" >> "$GITHUB_ENV"
+          echo "USERPROFILE=$home" >> "$GITHUB_ENV"
+          echo "VIBESTREAK_CONFIG=$home/.config/vibestreak/config.json" >> "$GITHUB_ENV"
+      - name: Collect and status run on an empty machine
+        run: |
+          node bin/vibestreak.mjs collect
+          node bin/vibestreak.mjs status
+          node bin/vibestreak.mjs nudge
+          node bin/vibestreak.mjs
+      - name: Terminal views read the live public API
+        run: |
+          node bin/vibestreak.mjs board | grep -q '^Leaderboard'
+          node bin/vibestreak.mjs board all streak | grep -q 'current streak'
+          node bin/vibestreak.mjs today | grep -q 'coding with AI today'
+          node bin/vibestreak.mjs profile hattray | grep -q 'active days'
+      - name: Background jobs install and remove
+        run: |
+          node bin/vibestreak.mjs autosync on
+          node bin/vibestreak.mjs status | grep -q '^Autosync    on'
+          case "$RUNNER_OS" in
+            macOS)   ls "$HOME/Library/LaunchAgents" | grep -c dev.vibestreak | grep -qx 2 ;;
+            Linux)   (systemctl --user list-timers 2>/dev/null | grep -q vibestreak) || crontab -l | grep -q vibestreak:begin ;;
+            Windows) schtasks //Query //TN 'vibestreak\nudge-2030' > /dev/null ;;
+          esac
+          # A chosen nudge time reschedules the evening job.
+          node bin/vibestreak.mjs nudge at 9:45pm
+          node bin/vibestreak.mjs status | grep -q 'checks at 21:45'
+          case "$RUNNER_OS" in
+            macOS)   grep -q '<integer>45</integer>' "$HOME/Library/LaunchAgents/dev.vibestreak.nudge.plist" ;;
+            Linux)   grep -qs 'OnCalendar=\*-\*-\* 21:45:00' "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/vibestreak-nudge.timer" || crontab -l | grep -q '^45 21 ' ;;
+            Windows) schtasks //Query //TN 'vibestreak\nudge-2145' > /dev/null && ! schtasks //Query //TN 'vibestreak\nudge-2030' > /dev/null 2>&1 ;;
+          esac
+          node bin/vibestreak.mjs autosync off
+          case "$RUNNER_OS" in
+            macOS)   ! ls "$HOME/Library/LaunchAgents" 2>/dev/null | grep -q dev.vibestreak ;;
+            Linux)   ! (crontab -l 2>/dev/null | grep -q vibestreak) ;;
+            Windows) ! schtasks //Query //TN 'vibestreak\nudge-2030' > /dev/null 2>&1 ;;
+          esac
