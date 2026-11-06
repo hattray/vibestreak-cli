@@ -6,8 +6,9 @@ import { parseArgs } from 'node:util'
 import { autosyncStatus, clock, installAutosync, nextRun, removeAutosync, SYNC_TIMES } from '../src/autosync.mjs'
 import { NUDGE_DEFAULT, notify, nudgeAction, nudgeText, nudgeTimeOf, parseNudgeTime, shouldNudge } from '../src/nudge.mjs'
 import { collect, sinceDate, summarize, syncSince } from '../src/collect.mjs'
-import { CONFIG_PATH, loadConfig, saveConfig } from '../src/config.mjs'
+import { becomeOwnMachine, CONFIG_PATH, loadConfig, saveConfig } from '../src/config.mjs'
 import { configuredEmails, DEFAULT_ROOTS, globalEmail, scanEmails } from '../src/git.mjs'
+import { hardwareId } from '../src/hardware.mjs'
 import { deviceLogin } from '../src/login.mjs'
 import { parsePause, pausedUntil, untilText } from '../src/pause.mjs'
 import { updateCommand, updateNotice, VERSION } from '../src/version.mjs'
@@ -64,7 +65,7 @@ async function api(config, path, init = {}) {
     headers: { authorization: `Bearer ${config.token}`, 'content-type': 'application/json', 'x-vibestreak-cli': VERSION, 'user-agent': `${BRAND}/${VERSION}`, ...init.headers },
   })
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw Object.assign(new Error(body.error ?? `${response.status} ${response.statusText}`), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error(body.error ?? `${response.status} ${response.statusText}`), { status: response.status, code: body.code })
   return body
 }
 
@@ -313,7 +314,7 @@ async function sync(config, values, log, isSync) {
     if (first) emails.push(first)
   }
   const started = Date.now()
-  const payload = await collect({ config: { ...config, emails }, salt: me?.salt ?? config.localSalt, since: isSync ? syncSince(config, values) : values.since })
+  const payload = await collect({ config: { ...config, emails, hardwareId: await hardwareId() }, salt: me?.salt ?? config.localSalt, since: isSync ? syncSince(config, values) : values.since })
   if (values.json) return console.log(JSON.stringify(payload, null, 2))
   const s = summarize(payload)
   log(`${s.activeDays} active days since ${payload.since} (${((Date.now() - started) / 1000).toFixed(1)}s)`)
@@ -322,7 +323,16 @@ async function sync(config, values, log, isSync) {
   }
   log(`  ${'commits'.padEnd(11)} ${fmt(s.commits)} by you in ${s.repos} repos, ${fmt(s.aiCommits)} with an AI co-author (${emails.join(', ') || 'no addresses'})`)
   if (!isSync) return log(`\nNothing was sent. \`${BRAND} sync\` uploads these totals.`)
-  const result = await api(config, '/api/v1/upload', { method: 'POST', body: JSON.stringify(payload) })
+  let result
+  try {
+    result = await api(config, '/api/v1/upload', { method: 'POST', body: JSON.stringify(payload) })
+  } catch (error) {
+    if (error.code !== 'machine-copied' || values.ownMachine) throw error
+    const since = becomeOwnMachine(config)
+    await saveConfig(config)
+    console.log(`This computer's settings were copied from another computer, so it now syncs as a machine of its own (${config.machineName}).`)
+    return sync(config, { ...values, since, ownMachine: true }, log, isSync)
+  }
   config.lastSync = new Date().toISOString()
   config.lastSyncServer = config.server
   config.lastSyncSummary = { days: result.days, commits: result.commits, repos: s.repos }

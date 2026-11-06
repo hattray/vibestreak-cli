@@ -3,6 +3,15 @@
 Any version runs with `npx vibestreak@<version>`; `npx vibestreak@latest autosync on`
 moves the background sync to the newest one.
 
+## 0.3.7 (unreleased)
+
+- A settings folder copied to a new computer (Migration Assistant, a backup
+  restore) no longer shares its machine id with the old computer. Both used
+  to sync as one machine at the same minutes, overwriting each other's days
+  and refusing every other sync. The CLI now sends a hash of the computer's
+  own id; a computer found using another's machine id takes one of its own and
+  sends only what happened since the copy.
+
 ## 0.3.6 (2026-10-26)
 
 - Codex: messages are counted again for Codex versions that log no message

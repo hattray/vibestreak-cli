@@ -40,7 +40,7 @@ export async function collect({ config, salt, since = sinceDate() }) {
   ])
   return {
     version: PAYLOAD_VERSION,
-    machine: { id: config.machineId, name: config.machineName },
+    machine: { id: config.machineId, name: config.machineName, ...(config.hardwareId && { hw: config.hardwareId }) },
     timezone: timezone(),
     since,
     days: [...claude, ...codex, ...cursorDays, ...gemini, ...antigravity, ...copilot, ...opencode],

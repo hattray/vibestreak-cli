@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir, hostname } from 'node:os'
 import { dirname, join } from 'node:path'
 
+import { dayKey } from './days.mjs'
+
 export const CONFIG_PATH = process.env.VIBESTREAK_CONFIG ?? join(homedir(), '.config', 'vibestreak', 'config.json')
 
 // What one machine remembers: its id (so its uploads replace each other and
@@ -31,4 +33,14 @@ export async function loadConfig() {
 export async function saveConfig(config) {
   await mkdir(dirname(CONFIG_PATH), { recursive: true })
   await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 })
+}
+
+// The server found this machine id in use by another computer: this config
+// was copied from it (a migration or a restore). This computer takes an id of
+// its own and sends only what happened since the copy (its last sync), so
+// the days the other computer already sent aren't counted twice.
+export function becomeOwnMachine(config, at = new Date()) {
+  config.machineId = randomUUID()
+  config.machineName = hostname().replace(/\.local$/, '')
+  return dayKey(config.lastSync ? new Date(config.lastSync) : at)
 }
