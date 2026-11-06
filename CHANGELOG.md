@@ -3,7 +3,7 @@
 Any version runs with `npx vibestreak@<version>`; `npx vibestreak@latest autosync on`
 moves the background sync to the newest one.
 
-## 0.3.7 (unreleased)
+## 0.3.7 (2026-11-05)
 
 - A settings folder copied to a new computer (Migration Assistant, a backup
   restore) no longer shares its machine id with the old computer. Both used
